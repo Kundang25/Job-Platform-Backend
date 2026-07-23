@@ -3,20 +3,37 @@
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { authService } from '../../services/authService';
+import { useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const [loginError, setLoginError] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }
+  } = useForm();
 
   const onSubmit = async (data) => {
-    // TODO: Connect to authService.js (Axios)
-    console.log('Login Data:', data);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    // Redirect to dashboard on success
-    router.push('/dashboard');
+    try {
+      setLoginError('');
+
+      const response = await authService.login(data);
+
+      console.log('Login Success:', response);
+
+      localStorage.setItem('user', JSON.stringify(response.user));
+
+      router.push('/dashboard');
+    } catch (error) {
+      console.error(error);
+
+      setLoginError(
+        error?.response?.data?.message || 'Login failed'
+      );
+    }
   };
 
   return (
@@ -46,10 +63,16 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   autoComplete="email"
-                  className={`appearance-none block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-slate-300'} rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors`}
+                  className={`appearance-none block w-full px-3 py-2 border ${
+                    errors.email ? 'border-red-300' : 'border-slate-300'
+                  } rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors`}
                   {...register('email', { required: 'Email is required' })}
                 />
-                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -63,13 +86,20 @@ export default function LoginPage() {
                   id="password"
                   type="password"
                   autoComplete="current-password"
-                  className={`appearance-none block w-full px-3 py-2 border ${errors.password ? 'border-red-300' : 'border-slate-300'} rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors`}
+                  className={`appearance-none block w-full px-3 py-2 border ${
+                    errors.password ? 'border-red-300' : 'border-slate-300'
+                  } rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors`}
                   {...register('password', { required: 'Password is required' })}
                 />
-                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
             </div>
 
+            {/* Remember Me + Forgot Password */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -90,6 +120,14 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Login Error */}
+            {loginError && (
+              <p className="text-sm text-red-600 text-center">
+                {loginError}
+              </p>
+            )}
+
+            {/* Submit Button */}
             <div>
               <button
                 type="submit"
@@ -101,6 +139,7 @@ export default function LoginPage() {
             </div>
           </form>
 
+          {/* Signup Link */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -108,7 +147,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-slate-500">
-                  Don't have an account?
+                  Don&apos;t have an account?
                 </span>
               </div>
             </div>

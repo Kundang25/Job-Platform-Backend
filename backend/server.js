@@ -17,6 +17,7 @@ const { errorMiddleware, notFound } = require("./src/middleware/errorMiddleware"
 const advancedAIRoutes = require("./src/routes/advancedAIRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
 const { startJobScraper } = require("./src/cron/jobScraperCron");
+const dashboardRoutes = require("./src/routes/dashboardRoutes");
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use("/api/applications", applicationRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/advanced-ai", advancedAIRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 startAutomation();
 startJobScraper();

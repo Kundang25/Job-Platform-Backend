@@ -1,5 +1,6 @@
 import api from '../utils/axiosInstance';
 
+
 export const authService = {
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);

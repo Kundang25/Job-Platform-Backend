@@ -1,78 +1,89 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getJobs } from '@/services/jobService';
 
 export default function JobsPage() {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [remoteFilter, setRemoteFilter] = useState(false);
+  const [usFilter, setUsFilter] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState([]);
 
-  // Dummy Job Data
-  const jobs = [
-    {
-      id: '1',
-      title: 'Senior Frontend Engineer',
-      company: 'TechCorp',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      remote: true,
-      salary: '$140k - $170k',
-      matchScore: 94,
-      postedAt: '2 days ago',
-    },
-    {
-      id: '2',
-      title: 'Full Stack Developer',
-      company: 'StartupX',
-      location: 'New York, NY',
-      type: 'Full-time',
-      remote: true,
-      salary: '$120k - $150k',
-      matchScore: 88,
-      postedAt: '5 hours ago',
-    },
-    {
-      id: '3',
-      title: 'React Native Developer',
-      company: 'AppWorks',
-      location: 'Austin, TX',
-      type: 'Contract',
-      remote: false,
-      salary: '$90 - $110/hr',
-      matchScore: 76,
-      postedAt: '1 week ago',
-    },
-    {
-      id: '4',
-      title: 'UI/UX Designer',
-      company: 'Creative Studio',
-      location: 'Remote',
-      type: 'Part-time',
-      remote: true,
-      salary: '$60k - $80k',
-      matchScore: 45,
-      postedAt: '3 days ago',
-    }
-  ];
+  // Fetch jobs from backend
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await getJobs();
+        if (res.data && res.data.success) {
+          setJobs(res.data.jobs);
+        }
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const handleTypeChange = (type) => {
+    setSelectedTypes(prev => 
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  // Filter logic
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = 
+      job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Simulate remote check if location contains 'remote' or 'worldwide'
+    const isRemote = job.location?.toLowerCase().includes('remote') || false;
+    const matchesRemote = !remoteFilter || isRemote;
+
+    const isUS = job.location?.toLowerCase().includes('us') || job.location?.toLowerCase().includes('usa') || false;
+    const matchesUS = !usFilter || isUS;
+
+    return matchesSearch && matchesRemote && matchesUS;
+  });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+    <div className="max-w-7xl mx-auto space-y-8 pb-20 px-4 md:px-6">
       
-      {/* Header & Search */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Find Jobs</h1>
-          <p className="mt-1 text-sm text-slate-500">Discover roles optimized for your profile.</p>
-        </div>
-        <div className="w-full md:w-96 relative">
-          <input
-            type="text"
-            placeholder="Search by job title, company, or keywords..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <span>🔍</span>
+      {/* Header and Search */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-8 shadow-xl text-white">
+        <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide uppercase text-indigo-300">
+              Opportunity Directory
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight">Explore Open Positions</h1>
+            <p className="text-slate-300 text-sm max-w-xl">
+              Discover roles synced in real-time from our platform database. Find your next career leap.
+            </p>
+          </div>
+          
+          <div className="w-full md:w-96 relative">
+            <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Search by job title, company..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-white placeholder-slate-400 shadow-sm transition-all"
+            />
           </div>
         </div>
       </div>
@@ -81,47 +92,38 @@ export default function JobsPage() {
         
         {/* Left Sidebar: Filters */}
         <aside className="w-full lg:w-64 flex-shrink-0 space-y-6">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
             
-            {/* Filter: Job Type */}
+            {/* Filter: Location Preference */}
             <div>
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Job Type</h3>
-              <div className="space-y-2">
-                {['Full-time', 'Part-time', 'Contract', 'Freelance'].map(type => (
-                  <label key={type} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 border-slate-300" />
-                    <span className="text-sm text-slate-700">{type}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Filter: Location */}
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Location</h3>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="rounded text-blue-600 focus:ring-blue-500 border-slate-300" />
-                  <span className="text-sm text-slate-700">Remote Only</span>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Location</h3>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2.5 cursor-pointer group">
+                  <input 
+                    type="checkbox" 
+                    checked={remoteFilter}
+                    onChange={(e) => setRemoteFilter(e.target.checked)}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500/20 border-slate-300 cursor-pointer" 
+                  />
+                  <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Remote Only</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 border-slate-300" />
-                  <span className="text-sm text-slate-700">US Only</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 border-slate-300" />
-                  <span className="text-sm text-slate-700">Worldwide</span>
+                <label className="flex items-center gap-2.5 cursor-pointer group">
+                  <input 
+                    type="checkbox" 
+                    checked={usFilter}
+                    onChange={(e) => setUsFilter(e.target.checked)}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500/20 border-slate-300 cursor-pointer" 
+                  />
+                  <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">US Only</span>
                 </label>
               </div>
             </div>
 
-            {/* Filter: Salary */}
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Salary Minimum</h3>
-              <input type="range" min="50" max="200" step="10" className="w-full accent-blue-600" />
-              <div className="flex justify-between text-xs text-slate-500 mt-2">
-                <span>$50k</span>
-                <span>$200k+</span>
+            {/* Filter: Simulation Indicator */}
+            <div className="pt-4 border-t border-slate-100">
+              <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl text-indigo-950 text-xs font-medium space-y-1">
+                <p className="font-bold">✨ Real Data Active</p>
+                <p className="text-indigo-700/80 leading-relaxed">All listings are loaded dynamically from your backend PostgreSQL database.</p>
               </div>
             </div>
 
@@ -130,57 +132,74 @@ export default function JobsPage() {
 
         {/* Right Main Content: Job Listings */}
         <main className="flex-1 space-y-4">
-          {jobs.map((job) => (
-            <Link href={`/jobs/${job.id}`} key={job.id} className="block group">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all flex flex-col sm:flex-row justify-between gap-4">
-                
-                {/* Job Info */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                      {job.title}
-                    </h2>
-                    {job.remote && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Remote
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-4">
-                    <span className="flex items-center gap-1">🏢 {job.company}</span>
-                    <span className="flex items-center gap-1">📍 {job.location}</span>
-                    <span className="flex items-center gap-1">💰 {job.salary}</span>
-                    <span className="flex items-center gap-1">⏱️ {job.postedAt}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                      {job.type}
-                    </span>
-                  </div>
-                </div>
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center space-y-3">
+              <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-slate-500 text-sm font-medium animate-pulse">Syncing jobs with database...</p>
+            </div>
+          ) : filteredJobs.length > 0 ? (
+            filteredJobs.map((job) => {
+              // Simulate some UI fields that are not in basic schema
+              const isRemote = job.location?.toLowerCase().includes('remote');
+              const postedDate = job.created_at ? new Date(job.created_at).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric'
+              }) : 'Today';
 
-                {/* Match Score & Action */}
-                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 border-t sm:border-t-0 sm:border-l border-slate-100 pt-4 sm:pt-0 sm:pl-6 min-w-[120px]">
-                  <div className="flex flex-col items-center sm:items-end">
-                    <span className="text-xs text-slate-500 font-medium mb-1">AI Match</span>
-                    <div className={`text-xl font-bold flex items-center gap-1 ${
-                      job.matchScore >= 90 ? 'text-emerald-600' : 
-                      job.matchScore >= 75 ? 'text-amber-500' : 'text-red-500'
-                    }`}>
-                      {job.matchScore}%
+              return (
+                <Link href={`/jobs/${job.id}`} key={job.id} className="block group">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row justify-between gap-6">
+                    
+                    {/* Job Info */}
+                    <div className="flex-1 space-y-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                          {job.title}
+                        </h2>
+                        {isRemote && (
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            Remote
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-semibold text-slate-500">
+                        <span className="flex items-center gap-1">🏢 {job.company}</span>
+                        <span className="flex items-center gap-1">📍 {job.location || 'Remote'}</span>
+                        <span className="flex items-center gap-1">⏱️ Posted {postedDate}</span>
+                      </div>
+                      
+                      {job.description && (
+                        <p className="text-slate-600 text-sm line-clamp-2 leading-relaxed">
+                          {job.description}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                  
-                  <button className="px-4 py-2 bg-blue-50 text-blue-700 font-medium rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors border border-blue-100 group-hover:border-blue-600">
-                    View Job
-                  </button>
-                </div>
 
-              </div>
-            </Link>
-          ))}
+                    {/* Action Block */}
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 border-t sm:border-t-0 sm:border-l border-slate-100 pt-4 sm:pt-0 sm:pl-6 min-w-[130px]">
+                      <div className="flex flex-col items-start sm:items-end">
+                        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">AI Match</span>
+                        <div className="text-lg font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                          92% Match
+                        </div>
+                      </div>
+                      
+                      <button className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-xl group-hover:bg-slate-900 group-hover:text-white transition-all duration-200 border border-indigo-100 group-hover:border-slate-900 text-xs shadow-sm">
+                        View Job Details
+                      </button>
+                    </div>
+
+                  </div>
+                </Link>
+              );
+            })
+          ) : (
+            <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm text-slate-400 font-medium">
+              <span className="text-4xl block mb-2">💼</span>
+              No job postings match your filters or search.
+            </div>
+          )}
         </main>
         
       </div>

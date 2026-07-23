@@ -21,10 +21,93 @@ const generateToken = (user) => {
 
 
 
+// const signup = async (req, res) => {
+//   try {
+//     const { name, email, password, role } = req.body;
+
+//     if (!name || !email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "All fields required"
+//       });
+//     }
+
+//     const existingUser = await pool.query(
+//       "SELECT * FROM users WHERE email = $1",
+//       [email]
+//     );
+
+//     if (existingUser.rows.length > 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User already exists"
+//       });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     const userRole =
+//         role && ["student", "admin"].includes(role)
+//             ? role
+//             : "student";
+
+//     const newUser = await pool.query(
+//       `INSERT INTO users 
+//       (id, name, email, password, role, is_verified, created_at, updated_at)
+//       VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
+//       RETURNING id,name,email,role`,
+//       [
+//         uuidv4(),
+//         name,
+//         email,
+//         hashedPassword,
+//         userRole,
+//         false
+//       ]
+//     );
+
+//     const { error } = signupSchema.validate(req.body);
+
+//     if (error) {
+//       return res.status(400).json({
+//         success: false,
+//         message: error.details[0].message
+//       });
+// }
+
+//     const token = generateToken(newUser.rows[0]);
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Signup successful",
+//       token,
+//       user: newUser.rows[0]
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error"
+//     });
+//   }
+// };
+
 const signup = async (req, res) => {
   try {
+    // Step 1: Validate request body first
+    const { error } = signupSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message
+      });
+    }
+
+    // Step 2: Get values from body
     const { name, email, password, role } = req.body;
 
+    // Step 3: Check required fields
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -32,6 +115,7 @@ const signup = async (req, res) => {
       });
     }
 
+    // Step 4: Check if user already exists
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
@@ -44,18 +128,21 @@ const signup = async (req, res) => {
       });
     }
 
+    // Step 5: Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Step 6: Set role
     const userRole =
-        role && ["student", "admin"].includes(role)
-            ? role
-            : "student";
+      role && ["student", "admin"].includes(role)
+        ? role
+        : "student";
 
+    // Step 7: Insert new user
     const newUser = await pool.query(
-      `INSERT INTO users 
+      `INSERT INTO users
       (id, name, email, password, role, is_verified, created_at, updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
-      RETURNING id,name,email,role`,
+      RETURNING id, name, email, role`,
       [
         uuidv4(),
         name,
@@ -66,33 +153,26 @@ const signup = async (req, res) => {
       ]
     );
 
-    const { error } = signupSchema.validate(req.body);
-
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.details[0].message
-      });
-}
-
+    // Step 8: Generate token
     const token = generateToken(newUser.rows[0]);
 
+    // Step 9: Success response
     res.status(201).json({
       success: true,
       message: "Signup successful",
       token,
       user: newUser.rows[0]
     });
+
   } catch (error) {
-    console.error(error);
+    console.error("Signup Error:", error);
+
     res.status(500).json({
       success: false,
       message: "Server error"
     });
   }
 };
-
-
 
 
 

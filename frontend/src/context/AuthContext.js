@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
       if (token) {
         try {
           const userData = await authService.getCurrentUser();
-          setUser(userData);
+          setUser(userData.user);
         } catch (error) {
           console.error('Session expired or invalid token');
           localStorage.removeItem('token');
